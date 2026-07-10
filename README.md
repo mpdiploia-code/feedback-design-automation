@@ -56,4 +56,4 @@ El proceso descripto refleja una situación real del equipo de diseño. Por pol�
 
 ## Documentación
 
-El informe completo con diagnóstico, metodología y análisis crítico está disponible en `TP_Manuel_Gonzalez_Platero.pdf`.
+El informe completo con diagnóstico, metodología y análisis crítico está disponible en [TP_Manuel_Gonzalez_Platero.pdf](TP_Manuel_Gonzalez_Platero.pdf).
