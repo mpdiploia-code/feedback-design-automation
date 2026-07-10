@@ -1,0 +1,344 @@
+{
+  "name": "Feedback Design Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 18
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "99f41762-e7f9-4d8a-aaa7-96ec790ed2a8",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        624,
+        -32
+      ],
+      "id": "7364178b-f0d1-4f6e-8425-ebc72dec9400",
+      "name": "Merge feedback"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-sonnet-4-6",
+          "mode": "list",
+          "cachedResultName": "claude-sonnet-4-6"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Sos un asistente de gestión de feedback de diseño. Recibís feedback de distintas fuentes y tenés que clasificarlo según esta taxonomía:\n\nAlta → Rediseño: implica replantear la solución\nMedia → Cambio funcional: agregar o modificar inputs, flujos o comportamientos\nBaja → Writing/copy: cambios de texto\nMínima → Tamaños/espaciados: ajustes visuales menores\nRevisar → No tenés suficiente contexto para clasificar\n\nPara cada item de feedback devolvé un JSON con este formato:\n{\n  \"titulo\": \"título corto del feedback\",\n  \"descripcion\": \"descripción con contexto\",\n  \"prioridad\": \"Alta/Media/Baja/Mínima/Revisar\",\n  \"fuente\": \"Figma/Meet/Drive\",\n  \"responsable\": \"nombre del responsable\"\n}\nEl feedback a clasificar es:\n{{ $json.content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        832,
+        -32
+      ],
+      "id": "609608f8-2a25-4387-9171-e2f28ef8f638",
+      "name": "Clasificar con Claude",
+      "credentials": {
+        "anthropicApi": {
+          "id": "vdWCkSgCCpbU4Y0T",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "listId": "6a513012d6b345f211b41a2c",
+        "name": "={{ $json.titulo }}",
+        "description": "={{ $json.descripcion }}\n\nFuente: {{ $json.fuente }}\nResponsable: {{ $json.responsable }}",
+        "additionalFields": {
+          "idLabels": "={{ $json.labelId }}"
+        }
+      },
+      "type": "n8n-nodes-base.trello",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        -32
+      ],
+      "id": "ea8ab347-e299-4662-8e72-d96b805276a9",
+      "name": "Crear tarjeta Trello",
+      "credentials": {
+        "trelloApi": {
+          "id": "2LiJJu4LphbGO4Sw",
+          "name": "Trello account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.figma.com/v1/files/eMxbSjfXHYyVqW1smj2cfA/comments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        192,
+        48
+      ],
+      "id": "088e480b-93b2-4504-a58a-f6c15ddb7905",
+      "name": "Obtener comentarios Figma",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "81ktfiCYyIQYRfzA",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "1fSw3SH7JSc1oRl-QyjOAVl6n_a2n9YaMY_RtF7Yc8dQ"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        176,
+        -144
+      ],
+      "id": "66e0283e-03c6-4c09-bdbc-bf00226b49d2",
+      "name": "Obtener menciones en Especificaciones técnicas",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "bT1VUiL2V6mBh3Qw",
+          "name": "Google Docs OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "1Zy5nb8qBbOnKkMOQFCxOo8g41zXmnlaDKL4VlS-a-GA"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        208,
+        240
+      ],
+      "id": "bca30967-c917-42b2-b33f-757604f441be",
+      "name": "Obtener menciones en meets",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "bT1VUiL2V6mBh3Qw",
+          "name": "Google Docs OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const hoy = new Date().toISOString().split('T')[0];\n\nreturn $input.all().filter(item => {\n  const fecha = item.json.comments?.[0]?.created_at?.split('T')[0];\n  return fecha === hoy;\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        16
+      ],
+      "id": "3730b8b9-e980-4da4-a77b-769236002b6f",
+      "name": "\"Filtrar comentarios Figma por fecha"
+    },
+    {
+      "parameters": {
+        "jsCode": "const hoy = new Date().toISOString().split('T')[0];\nconst items = $input.all();\n\nreturn items.filter(item => {\n  // Si el documento tiene contenido, lo procesamos\n  // En producción real se filtraría por fecha de modificación del archivo\n  return item.json.content !== undefined;\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -144
+      ],
+      "id": "e156c93c-2deb-44d1-898e-50cc005ce434",
+      "name": "Filtrar specs Drive por fecha"
+    },
+    {
+      "parameters": {
+        "jsCode": "const hoy = new Date().toISOString().split('T')[0];\nconst items = $input.all();\n\nreturn items.filter(item => {\n  // Si el documento tiene contenido, lo procesamos\n  // En producción real se filtraría por fecha de modificación del archivo\n  return item.json.content !== undefined;\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        240
+      ],
+      "id": "87a85266-082b-41c4-a5c3-e46338fa31ae",
+      "name": "Filtrar transcripciones Meet por fecha"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.content[0].text;\n\nconst jsonMatch = text.match(/```json\\n([\\s\\S]*?)\\n```/);\nconst jsonString = jsonMatch[1];\nconst items = JSON.parse(jsonString);\n\nconst labelMap = {\n  'Alta': '6a5160bf08de2903d3756bc1',\n  'Media': '6a5160cd6da489f94f048eee',\n  'Baja': '6a5161014775737140fa3d58',\n  'Mínima': '6a516126cb4e14564058465e',\n  'Revisar': '6a516135c91c5a96aa06db81'\n};\n\nreturn items.map(item => ({ \n  json: {\n    ...item,\n    labelId: labelMap[item.prioridad] || ''\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1216,
+        -32
+      ],
+      "id": "f1185f17-1254-4b79-adff-14d4ad985227",
+      "name": "Parsear respuesta Claude"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Obtener menciones en meets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Obtener comentarios Figma",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Obtener menciones en Especificaciones técnicas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge feedback": {
+      "main": [
+        [
+          {
+            "node": "Clasificar con Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificar con Claude": {
+      "main": [
+        [
+          {
+            "node": "Parsear respuesta Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener comentarios Figma": {
+      "main": [
+        [
+          {
+            "node": "\"Filtrar comentarios Figma por fecha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener menciones en Especificaciones técnicas": {
+      "main": [
+        [
+          {
+            "node": "Filtrar specs Drive por fecha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener menciones en meets": {
+      "main": [
+        [
+          {
+            "node": "Filtrar transcripciones Meet por fecha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\"Filtrar comentarios Figma por fecha": {
+      "main": [
+        [
+          {
+            "node": "Merge feedback",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Filtrar specs Drive por fecha": {
+      "main": [
+        [
+          {
+            "node": "Merge feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar transcripciones Meet por fecha": {
+      "main": [
+        [
+          {
+            "node": "Merge feedback",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Parsear respuesta Claude": {
+      "main": [
+        [
+          {
+            "node": "Crear tarjeta Trello",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "cc894fbe-d137-4a0b-9a12-f8a3f422773b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0ab96d40d37eb020c73f1fe2039550facf2677ced642392e0ce0f37f805839ed"
+  },
+  "nodeGroups": [],
+  "id": "UH2Zu2DJx3pNU5Ct",
+  "tags": []
+}
